@@ -59,3 +59,39 @@ def fetch_and_save_currencies(db: Session = Depends(get_db)):
     else:
         # Jeśli odpowiedź z API NBP nie jest poprawna następuje zwrócenie błędu HTTP 500 z odpowiednim komunikatem
         raise HTTPException(status_code=500, detail="Nie można pobrać danych z API NBP")
+    
+
+@app.get("/currencies")
+def get_available_currencies(db: Session = Depends(get_db)):
+    # Pobranie unikalnych kodów walut dostępnych w bazie danych
+    currencies = db.query(CurrencyRate.code, CurrencyRate.currency).distinct().all()
+
+    # Konwersja wyników zapytania do listy kodów walut
+    return [{"code": c.code, "currency": c.currency} for c in currencies]
+
+
+@app.get("/currencies/{date}")
+def get_currencies_by_date(date: str, db: Session = Depends(get_db)):
+    # Konwersja daty z formatu string na obiekt datetime
+    # Jeśli format daty jest nieprawidłowy, zostanie zwrócony błąd HTTP 400 z odpowiednim komunikatem
+    try:
+        target_date = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Nieprawidłowy format daty. Użyj formatu YYYY-MM-DD.")
+    
+    # Pobranie kursów walut z bazy danych dla podanej daty obowiązywania
+    # Jeśli nie zostaną znalezione żadne kursy walut dla podanej daty, zostanie zwrócony błąd HTTP 404 z odpowiednim komunikatem
+    rates = db.query(CurrencyRate).filter(CurrencyRate.effective_date == target_date).all()
+    if not rates:
+        raise HTTPException(status_code=404, detail=f"Nie znaleziono kursów walut dla daty {date}.")
+    
+    # Konwersja wyników zapytania do listy słowników zawierających informacje o kursach walut
+    return [
+        {
+            "id": r.id,
+            "code": r.code,
+            "currency": r.currency,
+            "mid": r.mid,
+            "effective_date": r.effective_date
+        } for r in rates
+    ]
