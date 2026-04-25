@@ -59,23 +59,3 @@ def fetch_and_save_currencies(db: Session = Depends(get_db)):
     else:
         # Jeśli odpowiedź z API NBP nie jest poprawna następuje zwrócenie błędu HTTP 500 z odpowiednim komunikatem
         raise HTTPException(status_code=500, detail="Nie można pobrać danych z API NBP")
-
-
-# Endpoint do pobierania aktualnych kursów walut z API NBP
-@app.get("/currencies")
-def get_currencies():
-    # Zdefiniowanie URL do API NBP, które zwraca aktualne kursy walut w formacie JSON
-    url = "http://api.nbp.pl/api/exchangerates/tables/A/?format=json"
-
-    # Wysłanie żądania GET do API NBP
-    response = requests.get(url)
-
-    # Sprawdzenie, czy odpowiedź z API jest poprawna (status code 200)
-    if response.status_code == 200:
-        # Parsowanie odpowiedzi JSON i wyciągnięcie kursów walut
-        data = response.json()
-        rates = data[0]['rates']
-        return {"currencies": rates}
-    else:
-        # Jeśli odpowiedź z API NBP nie jest poprawna następuje zwrócenie błędu HTTP 500 z odpowiednim komunikatem
-        raise HTTPException(status_code=500, detail="Nie można pobrać danych z API NBP")
