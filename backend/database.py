@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declerative_base, sessionmaker
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
 # Adres URL do bazy danych SQLite, która będzie używana do przechowywania danych o kursach walut
 # Plik bazy danych będzie znajdował się w tym samym katalogu i będzie nazywał się "currencies.db"
@@ -14,7 +15,7 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Utworzenie klasy Base, z której będą dziedziczyć modele tabel w bazie danych
-Base = declerative_base()
+Base = declarative_base()
 
 # Funkcja pomocnicza, która w bezpieczny sposób otwiera i zamyka połączenie z bazą danych
 def get_db():
