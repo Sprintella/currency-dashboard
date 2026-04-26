@@ -17,6 +17,7 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+    restart: always
     environment:
       # Przekazanie Pythonowi linku do bazy danych
       - DATABASE_URL=postgresql://admin:supersecretpassword@db:5432/currency_db
