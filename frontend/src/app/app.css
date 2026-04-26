@@ -1,0 +1,179 @@
+:host {
+    display: block;
+    min-height: 100vh;
+    background-color: #121212;
+}
+
+.dashboard-container {
+    padding: 40px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 950px;
+    margin: 0 auto;
+    color: #E0E0E0;
+}
+
+.page-title {
+    color: #FFF;
+    margin-bottom: 30px;
+}
+
+.panel {
+    background: #1E1E1E;
+    padding: 20px 25px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #333;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.panel-title {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1rem; /* rem zamiast px dla lepszej skalowalności */
+    color: #FFF;
+}
+
+.status-bar {
+    padding: 12px 20px;
+    background: #2B2F32;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    color: #D1D5DB;
+    border-left: 4px solid #6C757D;
+}
+
+.ranges-row {
+    margin-bottom: 20px;
+    display: flex; /* Użycie flexboxa do ułożenia elementów w jednym rzędzie */
+    align-items: center;
+    gap: 10px; /* Odstęp między elementami */
+}
+
+.filters-row {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end; /* Wyrównanie do dolnej krawędzi */
+    flex-wrap: wrap; /* Pozwala na zawijanie elementów w przypadku braku miejsca */
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column; /* Ustawienie elementów w kolumnie */
+    gap: 5px;
+}
+
+.filter-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #ADB5BD;
+}
+
+.form-control {
+    padding: 8px 12px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    outline: none;
+    background-color: #2D2D2D;
+    color: #FFF;
+    color-scheme: dark; /* Zmiana wbudowanego w Windowsa kalendarza na ciemny */
+    transition: border-color 0.2s; /* Płynna zmiana koloru obramowania */
+}
+
+.form-control:focus {
+    border-color: #0D6EFD;
+}
+
+.btn {
+    padding: 9px 18px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    border-radius: 5px;
+    border: none;
+    font-weight: 500;
+    transition: all 0.2s ease; /* Płynne przejścia dla wszystkich właściwości */
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: #198754;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #146C43;
+}
+
+.btn-outline {
+    background: #1E1E1E;
+    color: #6EA8FE;
+    border: 1px solid #6EA8FE;
+    padding: 7px 15px;
+}
+
+.btn-outline:hover:not(:disabled) {
+    background: #2C3E50;
+}
+
+.btn-secondary {
+    background: #495057;
+    color: white;
+    height: 37px; /* Wyrównanie wysokości z inputami */
+}
+
+.btn-secondary:hover {
+    background: #343A40;
+}
+
+.table-info {
+    text-align: right;
+    font-size: 0.9rem;
+    color: #ADB5BD;
+    margin-bottom: 10px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    background: #1E1E1E;
+    border-radius: 6px;
+    overflow: hidden; /* Zapobiega rozciąganiu się obramowania */
+}
+
+.data-table th {
+    background: #343a40;
+    color: white;
+    padding: 12px 15px;
+    text-align: left;
+}
+
+.data-table td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #333;
+}
+
+.data-table tr:last-child td {
+    border-bottom: none; /* Usunięcie dolnej linii z ostatniego wiersza */
+}
+
+.data-table tr:hover {
+    background-color: #2A2A2A;
+}
+
+.font-bold { font-weight: bold; }
+.text-red { color: #EA868F; }
+.label-bold { font-weight: 600; margin-right: 5px; color: #ADB5BD; }
+
+.empty-state {
+    text-align: center;
+    padding: 30px;
+    background: #2C1A1C;
+    color: #EA868F;
+    border-radius: 5px;
+    border: 1px solid #4E2C30;
+}

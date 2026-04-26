@@ -18,11 +18,23 @@ export class App implements OnInit {
 
   allRates: any[] = []; // Tablica do przechowywania wszystkich kursów walut
   filteredRates: any[] = []; // Tablica do przechowywania przefiltrowanych kursów walut
+  totalCount: number = 0; // Zmienna do przechowywania całkowitej liczby wpisów w bazie
 
   // Zmienne do filtrowania danych
   selectedYear: string = '';
   selectedQuarter: string = '';
   selectedMonth: string = '';
+  selectedDay: string = '';
+
+  availableYears = ['2026', '2025', '2024']; // Tablica do przechowywania dostępnych lat w danych
+  quarters = [
+    { id: '1', name: 'I Kwartał' }, { id: '2', name: 'II Kwartał' },
+    { id: '3', name: 'III Kwartał' }, { id: '4', name: 'IV Kwartał' }
+  ];
+  months = [
+    'Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 
+    'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'
+  ];
 
   // Metoda wywoływana automatycznie po włączeniu strony
   ngOnInit() {
@@ -30,14 +42,15 @@ export class App implements OnInit {
   }
 
   // Metoda do pobierania danych z NBP
-  fetchFromNBP() {
+  fetchFromNBP(days: number = 1) {
     this.isLoading = true; // Ustawienie flagi ładowania na true
-    this.message = 'Pobieranie najnowszych danych z NBP...'; // Ustawienie komunikatu o pobieraniu danych
+    this.message = `Łączenie z NBP (pobieranie danych z ostatnich ${days} dni)...`; // Ustawienie komunikatu o pobieraniu danych
 
-    this.http.post('http://127.0.0.1:8000/currencies/fetch', {}).subscribe({
+    this.http.post(`http://127.0.0.1:8000/currencies/fetch?days=${days}`, {}).subscribe({
       next: (response: any) => {
         this.message = response.message; // Ustawienie komunikatu z odpowiedzi serwera
-        this.getAllHistory(); // Pobranie wszystkich danych po udanym pobraniu z NBP
+        this.getAllHistory(true); // Pobranie wszystkich danych po udanym pobraniu z NBP. True oznacza brak komunkatu o pobieraniu historii
+        this.cdr.detectChanges(); // Ręczne wywołanie detekcji zmian, aby zaktualizować widok
       },
       error: (error) => {
         this.message = 'Wystąpił błąd podczas pobierania danych z NBP';
@@ -48,16 +61,23 @@ export class App implements OnInit {
   }
 
   // Metoda do pobierania całej historii kursów walut z bazy danych
-  getAllHistory() {
-    this.isLoading = true; // Ustawienie flagi ładowania na true
-    this.message = 'Pobieranie historii kursów walut...'; // Ustawienie komunikatu o pobieraniu historii
+  getAllHistory(silent: boolean = false) {
+    if (!silent) {
+      this.isLoading = true; // Ustawienie flagi ładowania na true
+      this.message = 'Pobieranie historii kursów walut...'; // Ustawienie komunikatu o pobieraniu historii
+    }
 
     this.http.get('http://127.0.0.1:8000/currencies/history/all').subscribe({
       next: (data: any) => {
         this.allRates = data; // Przypisanie pobranych danych do tablicy allRates
-        this.filteredRates = data; // Na początku następuje pokazanie wszystkich danych bez filtrowania
-        this.message = `Załadowano ${data.length} historycznych kursów z bazy.`;
+        this.totalCount = data.length; // Ustawienie całkowitej liczby wpisów w bazie
+
+        if (!silent) {
+          this.message = 'Pobieranie historii kursów walut zakończone.';
+        }
+
         this.isLoading = false; // Ustawienie flagi ładowania na false
+        this.applyFilters(); // Zastosowanie filtrów do pobranych danych
         this.cdr.detectChanges(); // Ręczne wywołanie detekcji zmian, aby zaktualizować widok
       },
       error: (error) => {
@@ -83,8 +103,9 @@ export class App implements OnInit {
       const matchYear = this.selectedYear ? year === this.selectedYear : true;
       const matchQuarter = this.selectedQuarter ? quarter === this.selectedQuarter : true;
       const matchMonth = this.selectedMonth ? month.toString() === this.selectedMonth : true;
+      const matchDay = this.selectedDay ? rate.effective_date === this.selectedDay : true;
 
-      return matchYear && matchQuarter && matchMonth;
+      return matchYear && matchQuarter && matchMonth && matchDay;
     });
   }
 
@@ -92,6 +113,7 @@ export class App implements OnInit {
     this.selectedYear = '';
     this.selectedQuarter = '';
     this.selectedMonth = '';
+    this.selectedDay = '';
     this.applyFilters(); // Po wyczyszczeniu filtrów następuje ponowne zastosowanie filtrów, aby pokazać wszystkie dane
   }
 }
