@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import engine, get_db, Base
 from models import CurrencyRate
@@ -10,6 +11,13 @@ Base.metadata.create_all(bind=engine)
 
 # Stworzenie głównej instancji aplikacji FastAPI
 app = FastAPI(title="Currency Dashboard API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:4200"], # Adres pod którym będzie działać frontend Angular
+    allow_credentials=True,
+    allow_methods=["*"], # Pozwolenie na wszystkie metody HTTP (GET, POST, itp.)
+    allow_headers=["*"]
+)
 
 @app.post("/currencies/fetch")
 def fetch_and_save_currencies(db: Session = Depends(get_db)):
