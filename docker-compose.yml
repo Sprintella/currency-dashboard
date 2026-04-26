@@ -1,12 +1,27 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:15-alpine # Oficjalny, lekki obraz PostgreSQL
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: supersecretpassword
+      POSTGRES_DB: currency_db
+    ports:
+      - "5432:5432" # Domyślny port Postgresa
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Zapisanie danych na dysku, aby nie zniknęły po restarcie Dockera
+
   backend:
     build: ./backend
     ports:
       - "8000:8000"
-    volumes:
-      - ./backend/currencies.db:/app/currencies.db
+    environment:
+      # Przekazanie Pythonowi linku do bazy danych
+      - DATABASE_URL=postgresql://admin:supersecretpassword@db:5432/currency_db
+    depends_on:
+      - db # Backend nie ruszy, dopóki baza danych się nie włączy
 
   frontend:
     build: ./frontend
@@ -14,3 +29,7 @@ services:
       - "4200:4200"
     depends_on:
       - backend
+
+# Wirtualny dysk na dane bazodanowe
+volumes:
+  postgres_data:

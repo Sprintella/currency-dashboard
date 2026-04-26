@@ -1,15 +1,16 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-# Adres URL do bazy danych SQLite, która będzie używana do przechowywania danych o kursach walut
-# Plik bazy danych będzie znajdował się w tym samym katalogu i będzie nazywał się "currencies.db"
-SQLALCHEMY_DATABASE_URL = "sqlite:///./currencies.db"
+# Szukanie zmiennej środowiskowej DATABASE_URL podawanej przez Docker. W przypadku jej braku, awaryjnie używany jest SQLite
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./currencies.db")
 
 # Utworzenie silnika bazy danych, który będzie używany do komunikacji z bazą danych
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 # Utworzenie klasy SessionLocal, która będzie używana do tworzenia sesji do bazy danych
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
