@@ -1,60 +1,97 @@
-import { Component, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, ChangeDetectorRef, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-root',
   standalone: true,
+  imports: [FormsModule],
   templateUrl: './app.html',
   styleUrls: ['./app.css']
 })
-export class App {
+export class App implements OnInit {
   http = inject(HttpClient); // Wskrzyknięcie HttpClient do komponentu
   cdr = inject(ChangeDetectorRef); // Wskrzyknięcie ChangeDetectorRef do ręcznego wywoływania detekcji zmian
-  rates: any[] = []; // Tablica do przechowywania danych o walutach
+
   isLoading: boolean = false; // Flaga do zarządzania stanem ładowania danych
   message: string = ''; // Zmienna do przechowywania komunikatów o błędach lub innych informacji
+
+  allRates: any[] = []; // Tablica do przechowywania wszystkich kursów walut
+  filteredRates: any[] = []; // Tablica do przechowywania przefiltrowanych kursów walut
+
+  // Zmienne do filtrowania danych
+  selectedYear: string = '';
+  selectedQuarter: string = '';
+  selectedMonth: string = '';
+
+  // Metoda wywoływana automatycznie po włączeniu strony
+  ngOnInit() {
+    this.getAllHistory();
+  }
 
   // Metoda do pobierania danych z NBP
   fetchFromNBP() {
     this.isLoading = true; // Ustawienie flagi ładowania na true
-    this.message = 'Pobieranie danych z NBP...'; // Ustawienie komunikatu o pobieraniu danych
+    this.message = 'Pobieranie najnowszych danych z NBP...'; // Ustawienie komunikatu o pobieraniu danych
 
     this.http.post('http://127.0.0.1:8000/currencies/fetch', {}).subscribe({
       next: (response: any) => {
         this.message = response.message; // Ustawienie komunikatu z odpowiedzi serwera
-        this.isLoading = false; // Ustawienie flagi ładowania na false
-        this.cdr.detectChanges(); // Ręczne wywołanie detekcji zmian, aby zaktualizować widok
+        this.getAllHistory(); // Pobranie wszystkich danych po udanym pobraniu z NBP
       },
       error: (error) => {
-        this.message = 'Wystąpił błąd podczas pobierania danych z NBP'; // Ustawienie komunikatu o błędzie
+        this.message = 'Wystąpił błąd podczas pobierania danych z NBP';
         this.isLoading = false; // Ustawienie flagi ładowania na false
         this.cdr.detectChanges(); // Ręczne wywołanie detekcji zmian, aby zaktualizować widok
       }
     });
   }
 
-  getRatesForDate(date: string) {
-    if (!date) {
-      this.message = 'Proszę wybrać datę'; // Ustawienie komunikatu, jeśli data nie została wybrana
-      return;
-    }
-
+  // Metoda do pobierania całej historii kursów walut z bazy danych
+  getAllHistory() {
     this.isLoading = true; // Ustawienie flagi ładowania na true
-    this.message = `Pobieranie danych dla daty ${date}...`; // Ustawienie komunikatu o pobieraniu danych dla wybranej daty
+    this.message = 'Pobieranie historii kursów walut...'; // Ustawienie komunikatu o pobieraniu historii
 
-    this.http.get(`http://127.0.0.1:8000/currencies/${date}`).subscribe({
+    this.http.get('http://127.0.0.1:8000/currencies/history/all').subscribe({
       next: (data: any) => {
-        this.rates = data; // Przypisanie pobranych danych do tablicy rates
-        this.message = `Znaleziono w bazie ${data.length} walut dla daty ${date}`; // Ustawienie komunikatu o liczbie znalezionych walut
+        this.allRates = data; // Przypisanie pobranych danych do tablicy allRates
+        this.filteredRates = data; // Na początku następuje pokazanie wszystkich danych bez filtrowania
+        this.message = `Załadowano ${data.length} historycznych kursów z bazy.`;
         this.isLoading = false; // Ustawienie flagi ładowania na false
         this.cdr.detectChanges(); // Ręczne wywołanie detekcji zmian, aby zaktualizować widok
       },
       error: (error) => {
-        this.rates = []; // Czyszczenie tablicy rates w przypadku błędu
-        this.message = `Wystąpił błąd podczas pobierania danych dla daty ${date}`; // Ustawienie komunikatu o błędzie
+        this.message = 'Wystąpił błąd podczas pobierania historii kursów walut';
         this.isLoading = false; // Ustawienie flagi ładowania na false
         this.cdr.detectChanges(); // Ręczne wywołanie detekcji zmian, aby zaktualizować widok
       }
     });
+  }
+
+  // Metoda do filtrowania danych na podstawie wybranych kryteriów
+  applyFilters() {
+    this.filteredRates = this.allRates.filter(rate => {
+      // Rozdzielenie daty na części (rok, miesiąc, dzień)
+      const dateParts = rate.effective_date.split('-');
+      const year = dateParts[0];
+      const month = parseInt(dateParts[1], 10);
+
+      // Obliczenie kwartału na podstawie miesiąca
+      const quarter = Math.ceil(month / 3).toString();
+
+      // Sprawdzenie, czy dany rekord pasuje do wybranych filtrów
+      const matchYear = this.selectedYear ? year === this.selectedYear : true;
+      const matchQuarter = this.selectedQuarter ? quarter === this.selectedQuarter : true;
+      const matchMonth = this.selectedMonth ? month.toString() === this.selectedMonth : true;
+
+      return matchYear && matchQuarter && matchMonth;
+    });
+  }
+
+  clearFilters() {
+    this.selectedYear = '';
+    this.selectedQuarter = '';
+    this.selectedMonth = '';
+    this.applyFilters(); // Po wyczyszczeniu filtrów następuje ponowne zastosowanie filtrów, aby pokazać wszystkie dane
   }
 }

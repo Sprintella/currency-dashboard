@@ -1,43 +1,86 @@
-<div style="padding: 40px; font-family: sans-serif; max-width: 800px; margin: auto;">
+<div style="padding: 40px; font-family: sans-serif; max-width: 900px; margin: auto;">
 
   <h1>Currency Dashboard</h1>
 
   <div style="background: #F4F4F9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-
-    <h3>Aktualizacja bazy (NBP)</h3>
+    <h3>Aktualizacja bazy danych</h3>
     <button (click)="fetchFromNBP()" [disabled]="isLoading" style="padding: 10px 20px; background: #28A745; color: white; border: none; cursor: pointer; border-radius: 5px;">
-      Poberz dzisiejsze kursy z NBP
+      {{ isLoading ? 'Przetwarzanie...' : 'Pobierz dzisiejsze kursy z NBP' }}
     </button>
-
-    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #DDD;">
-
-    <h3>Przeglądanie kursów</h3>
-    <input type="date" #dateInput style="padding: 8px; margin-right: 10px; border: 1px solid #CCC; border-radius: 4px;">
-
-    <button (click)="getRatesForDate(dateInput.value)" [disabled]="isLoading" style="padding: 10px 20px; background: #007BFF; color: white; border: none; cursor: pointer; border-radius: 5px;">
-      Wyświetl tablicę
-    </button>
-
   </div>
-  
+
   @if (message) {
-    <div style="padding: 15px; background: #E2E3E5; border-radius: 5px; margin-bottom: 20px;">
+    <div style="padding: 15px; background: #E2E3E5"; border-radius: 5px; margin-bottom: 20px;>
       <strong>Status:</strong> {{ message }}
     </div>
   }
 
-  @if (rates.length > 0) {
+  <div style="background: #FFFFFF; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.05); border: 1px solid #DDD;">
+    <h3 style="margin-top: 0;">Filtrowanie historii (rok/kwartał/miesiąc)</h3>
+
+    <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+
+      <label>
+        <strong>Rok:</strong>
+        <select [(ngModel)]="selectedYear" (change)="applyFilters()" style="padding: 8px; margin-left: 5px;">
+          <option value="">Wszystkie</option>
+          <option value="2024">2024</option>
+          <option value="2023">2023</option>
+        </select>
+      </label>
+
+      <label>
+        <strong>Kwartał:</strong>
+        <select [(ngModel)]="selectedQuarter" (change)="applyFilters()" style="padding: 8px; margin-left: 5px;">
+          <option value="">Wszystkie</option>
+          <option value="1">I kwartał</option>
+          <option value="2">II kwartał</option>
+          <option value="3">III kwartał</option>
+          <option value="4">IV kwartał</option>
+        </select>
+      </label>
+
+      <label>
+        <strong>Miesiąc:</strong>
+        <select [(ngModel)]="selectedMonth" (change)="applyFilters()" style="padding: 8px; margin-left: 5px;">
+          <option value="">Wszystkie</option>
+          <option value="1">Styczeń</option>
+          <option value="2">Luty</option>
+          <option value="3">Marzec</option>
+          <option value="4">Kwiecień</option>
+          <option value="5">Maj</option>
+          <option value="6">Czerwiec</option>
+          <option value="7">Lipiec</option>
+          <option value="8">Sierpień</option>
+          <option value="9">Wrzesień</option>
+          <option value="10">Październik</option>
+          <option value="11">Listopad</option>
+          <option value="12">Grudzień</option>
+        </select>
+      </label>
+
+      <button (click)="clearFilters()" style="padding: 8px 15px; background: #6C757D; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Wyczyść filtry
+      </button>
+
+    </div>
+  </div>
+
+  @if (filteredRates.length > 0) {
+    <p style="text-align: right; font-size: 14px; color: gray;">Wyświetlono {{ filteredRates.length }} wyników</p>
     <table style="width: 100%; border-collapse: collapse; text-align: left; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
       <thead>
         <tr style="background: #007BFF; color: white;">
-          <th style="padding: 12px; border: 1px solid #DDD">Kod waluty</th>
-          <th style="padding: 12px; border: 1px solid #DDD">Nazwa waluty</th>
-          <th style="padding: 12px; border: 1px solid #DDD">Kurs średni (PLN)</th>
+          <th style="padding: 12px; border: 1px solid #DDD;">Data</th>
+          <th style="padding: 12px; border: 1px solid #DDD;">Kod</th>
+          <th style="padding: 12px; border: 1px solid #DDD;">Nazwa</th>
+          <th style="padding: 12px; border: 1px solid #DDD;">Kurs (PLN)</th>
         </tr>
       </thead>
       <tbody>
-        @for (rate of rates; track rate.code) {
+        @for (rate of filteredRates; track rate.id) {
           <tr style="background: white;">
+            <td style="padding: 10px; border: 1px solid #DDD;">{{ rate.effective_date }}</td>
             <td style="padding: 10px; border: 1px solid #DDD; font-weight: bold;">{{ rate.code }}</td>
             <td style="padding: 10px; border: 1px solid #DDD;">{{ rate.currency }}</td>
             <td style="padding: 10px; border: 1px solid #DDD; color: #D9534F; font-weight: bold;">{{ rate.mid }}</td>
@@ -45,6 +88,10 @@
         }
       </tbody>
     </table>
+  } @else {
+    <p style="text-align: center; padding: 20px; background: #F8D7DA; color: #721C24; border-radius: 5px;">
+      Brak dancyh dla wybranych filtrów. Proszę zmienić kryteria lub pobrać aktualne dane z NBP.
+    </p>
   }
-
+  
 </div>

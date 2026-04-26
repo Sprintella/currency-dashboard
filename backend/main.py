@@ -22,47 +22,61 @@ app.add_middleware(
 # Endpoint do pobierania aktualnych kursów walut z API NBP i zapisywania ich do bazy danych
 @app.post("/currencies/fetch")
 def fetch_and_save_currencies(days: int = 1, db: Session = Depends(get_db)):
-    # Adres URL do API NBP, który zwraca kursy walut z ostatnich X dni w formacie JSON
-    url = f"http://api.nbp.pl/api/exchangerates/tables/A/last/{days}/?format=json"
+    added_count = 0 # Licznik dodanych kursów walut do bazy danych
+    chunk_size = 30 # Rozmiar partii do przetwarzania kursów walut (NBP posiada limit 67)
+    remaining_days = days # Pozostała liczba dni do pobrania kursów walut
 
-    # Wysłanie żądania GET do API NBP
-    response = requests.get(url)
+    # Nagłówki HTTP, które będą wysyłane wraz z żądaniem do API NBP, aby określić, że oczekiwana jest odpowiedź w formacie JSON i zidentyfikować aplikację
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "CurrencyDashboard/1.0"
+    }
 
-    # Sprawdzenie, czy odpowiedź z API jest poprawna (status code 200)
-    if response.status_code == 200:
-        data = response.json()
-        added_count = 0 # Licznik dodanych kursów walut do bazy danych
+    while remaining_days > 0:
+        # Obliczenie liczby dni do pobrania w bieżącej partii (nie może przekroczyć chunk_size)
+        current_chunk = min(remaining_days, chunk_size)
+        url = f"https://api.nbp.pl/api/exchangerates/tables/A/last/{current_chunk}/"
+
+        # Wysłanie żądania GET do API NBP
+        response = requests.get(url, headers=headers)
+
+        # Sprawdzenie, czy odpowiedź z API jest poprawna (status code 200)
+        if response.status_code == 200:
+            data = response.json()
         
-        for table_data in data:
-            effective_date_str = table_data['effectiveDate'] # Pobranie daty obowiązywania kursów walut w formacie string
-            effective_date = datetime.strptime(effective_date_str, "%Y-%m-%d").date() # Konwersja daty z formatu string na obiekt datetime.date
-            rates = table_data['rates'] # Pobranie listy kursów walut z odpowiedzi API NBP
+            for table_data in data:
+                effective_date_str = table_data['effectiveDate'] # Pobranie daty obowiązywania kursów walut w formacie string
+                effective_date = datetime.strptime(effective_date_str, "%Y-%m-%d").date() # Konwersja daty z formatu string na obiekt datetime.date
+                rates_data = table_data['rates'] # Pobranie listy kursów walut z odpowiedzi API NBP
 
-            # Zapisanie kursów walut do bazy danych
-            for rate in rates:
-                # Sprawdzenie, czy kurs waluty o danym kodzie i dacie obowiązywania już istnieje w bazie danych
-                existing_rate = db.query(CurrencyRate).filter(
-                    CurrencyRate.code == rate['code'],
-                    CurrencyRate.effective_date == effective_date
-                ).first()
+                # Zapisanie kursów walut do bazy danych
+                for rate in rates_data:
+                    # Sprawdzenie, czy kurs waluty o danym kodzie i dacie obowiązywania już istnieje w bazie danych
+                    existing_rate = db.query(CurrencyRate).filter(
+                        CurrencyRate.code == rate['code'],
+                        CurrencyRate.effective_date == effective_date
+                    ).first()
 
-                # Jeśli kurs waluty o danym kodzie i dacie obowiązywania nie istnieje w bazie danych następuje jego dodanie do bazy danych
-                if not existing_rate:
-                    new_rate = CurrencyRate(
-                        currency=rate['currency'],
-                        code=rate['code'],
-                        mid=rate['mid'],
-                        effective_date=effective_date
-                    )
-                    db.add(new_rate) # Dodanie nowego kursu waluty do sesji bazy danych
-                    added_count += 1 # Zwiększenie licznika dodanych kursów walut
+                    # Jeśli kurs waluty o danym kodzie i dacie obowiązywania nie istnieje w bazie danych następuje jego dodanie do bazy danych
+                    if not existing_rate:
+                        new_rate = CurrencyRate(
+                            currency=rate['currency'],
+                            code=rate['code'],
+                            mid=rate['mid'],
+                            effective_date=effective_date
+                        )
+                        db.add(new_rate) # Dodanie nowego kursu waluty do sesji bazy danych
+                        added_count += 1 # Zwiększenie licznika dodanych kursów walut
 
-        # Zatwierdzenie zmian w bazie danych
-        db.commit()
-        return {"message": f"Pobrano i zapisano {added_count} nowych kursów z ostatnich {days} notowań."}
-    else:
-        # Jeśli odpowiedź z API NBP nie jest poprawna następuje zwrócenie błędu HTTP 500 z odpowiednim komunikatem
-        raise HTTPException(status_code=500, detail="Nie można pobrać danych z API NBP")
+            # Zatwierdzenie zmian w bazie danych
+            db.commit()
+            remaining_days -= current_chunk # Zmniejszenie liczby pozostałych dni do pobrania o liczbę dni pobranych w bieżącej partii
+        else:
+            # Jeśli odpowiedź z API NBP nie jest poprawna następuje zwrócenie błędu HTTP 500 z odpowiednim komunikatem
+            print(f"Błąd NBP: Status {response.status_code}, Odpowiedź: {response.text}")
+            raise HTTPException(status_code=500, detail=f"Nie można pobrać danych z API NBP. Status błędu: {response.status_code}")
+        
+    return {"message": f"Pobrano i zapisano {added_count} nowych kursów z ostatnich {days} notowań."}
     
 
 @app.get("/currencies")
